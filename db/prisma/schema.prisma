@@ -1,0 +1,196 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id                Int            @id @default(autoincrement())
+  email             String         @unique
+  firstName         String?
+  lastName          String?
+  username          String
+  bio               String?
+  phone             BigInt
+  password          String
+  links             String?
+  image             String?
+  skills            Skills[]
+  verified          Boolean        @default(false)
+  otp               Int
+  role              Role
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  projects          Project[]
+  projectUser       ProjectUsers[] @relation("Hirer")
+  ProjectUsers      ProjectUsers[] @relation("Worker")
+  WorkerReview      Review[]       @relation("WorkerReview")
+  HirerReview       Review[]       @relation("HirerReview")
+  messageFirstUser  Message[]      @relation("messageFirstUser")
+  messageSecondUser Message[]      @relation("messageSecondUser")
+}
+
+model Project {
+  id           Int            @id @default(autoincrement())
+  createdAt    DateTime       @default(now())
+  title        String
+  description  String
+  skills       Skills[]
+  files        Attachments[]
+  tags         Tags[]         @relation(references: [id])
+  budget       Decimal
+  Status       ProjectStatus
+  category     Category[]
+  ProjectUsers ProjectUsers[]
+  hierId       Int
+  user         User           @relation(fields: [hierId], references: [id])
+  review       Review?
+  payment      Payment?
+}
+
+model Message {
+  id           Int      @id @default(autoincrement())
+  createdAt    DateTime @default(now())
+  firstUser    User     @relation("messageFirstUser", fields: [firstUserId], references: [id])
+  firstUserId  Int
+  secondUser   User     @relation("messageSecondUser", fields: [secondUserId], references: [id])
+  secondUserId Int
+  message      String
+}
+
+model Payment {
+  id            Int     @id @default(autoincrement())
+  paymentId     String
+  amount        Decimal
+  paymentStatus String
+  paymentType   String
+  project       Project @relation(fields: [projectId], references: [id])
+  projectId     Int
+}
+
+model Job {
+  id          Int     @id @default(autoincrement())
+  title       String
+  description String
+  budget      Decimal
+  tags        Tags[]
+}
+
+model Review {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  worker    User     @relation("WorkerReview", fields: [workerId], references: [id])
+  workerId  Int
+  hire      User     @relation("HirerReview", fields: [hireId], references: [id])
+  hireId    Int
+  projectId Int
+  project   Project  @relation(fields: [projectId], references: [id])
+  rate      Int
+  comment   String
+  createAt  DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum ProjectStatus {
+  New
+  Completed
+  Running
+}
+
+model ProjectUsers {
+  id        Int               @id @default(autoincrement())
+  createdAt DateTime          @default(now())
+  project   Project           @relation(fields: [projectId], references: [id])
+  projectId Int
+  worker    User              @relation("Worker", fields: [workerId], references: [id])
+  workerId  Int
+  hire      User              @relation("Hirer", fields: [hireId], references: [id])
+  hireId    Int
+  Status    UserProjectStatus
+}
+
+enum UserProjectStatus {
+  Bid
+  BidAccepted
+  BidRejected
+  Invitation
+  InvitationAccepted
+  InvitationRejected
+  Offer
+  OfferRejected
+  Running
+  Completed
+  Dispute
+  Pause
+}
+
+model Skills {
+  id          Int     @id @default(autoincrement())
+  name        String
+  description String?
+  Slug        String
+  status      String
+  project     Project @relation(fields: [projectId], references: [id])
+  projectId   Int
+  user        User    @relation(fields: [userId], references: [id])
+  userId      Int
+}
+
+model Tags {
+  id          Int       @id @default(autoincrement())
+  name        String
+  description String?
+  Slug        String
+  project     Project[] @relation(references: [id])
+  job         Job       @relation(fields: [jobId], references: [id])
+  jobId       Int
+}
+
+model Category {
+  id          Int          @id @default(autoincrement())
+  name        String
+  description String?
+  Slug        String
+  isActive    Boolean
+  project     Project      @relation(fields: [projectId], references: [id])
+  projectId   Int
+  subCategory SubCategory?
+}
+
+model SubCategory {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  Slug        String
+  Parent      Category @relation(fields: [catagoryId], references: [id])
+  catagoryId  Int
+  isActive    Boolean
+}
+
+model Attachments {
+  id          Int            @id @default(autoincrement())
+  title       String
+  alias       attachmentType
+  description String
+  project     Project        @relation(fields: [projectId], references: [id])
+  projectId   Int
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+enum attachmentType {
+  ProjectFile
+  UserResume
+}
+
+enum Role {
+  Hier
+  Worker
+  Arbitrator
+}
